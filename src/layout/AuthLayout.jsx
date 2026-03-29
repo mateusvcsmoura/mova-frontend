@@ -18,9 +18,11 @@ function AuthLayout({
 
         {children}
 
-        <p className="auth-footer">
-          {footerText} <Link to={footerLinkTo}>{footerLinkLabel}</Link>
-        </p>
+        {footerText && footerLinkTo && footerLinkLabel && (
+          <p className="auth-footer">
+            {footerText} <Link to={footerLinkTo}>{footerLinkLabel}</Link>
+          </p>
+        )}
       </section>
     </main>
   );

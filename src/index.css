@@ -1,34 +1,41 @@
-/* :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+:root {
+  --font-family-base: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 
-  color-scheme: light dark;
-  color: #003366;
-  background-color: #D0E7FF;
+  --color-primary: #003366;
+  --color-primary-strong: #00264d;
+  --color-primary-soft: #aec5e7;
+  --color-background-start: #d0e7ff;
+  --color-background-end: #aec5e7;
+  --color-surface: #ffffff;
+  --color-text: #003366;
+  --color-text-inverse: #f2f7ff;
+  --color-border: #003366;
+  --color-focus: #4a90e2;
+  --color-success: #1f7a3f;
+  --color-success-soft: #e8f7ee;
+  --color-warning: #9a6b00;
+  --color-warning-soft: #fff4d9;
+  --color-error: #b3261e;
+  --color-error-soft: #fdecea;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-} */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
 
-/* a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+  --shadow-card: 0 12px 30px rgba(0, 31, 63, 0.15);
+  --transition-fast: 180ms ease;
 }
-a:hover {
-  color: #535bf2;
-} */
 
 body {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: var(--font-family-base);
   margin: 0;
-  place-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #D0E7FF, #AEC5E7);
-  color: #003366;
+  background: linear-gradient(135deg, var(--color-background-start), var(--color-background-end));
+  color: var(--color-text);
 }
 
 h1 {
@@ -37,33 +44,20 @@ h1 {
 }
 
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
   cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  transition: all var(--transition-fast);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+input,
+button,
+textarea,
+select {
+  font: inherit;
+}
+
+button:focus,
+button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
 }

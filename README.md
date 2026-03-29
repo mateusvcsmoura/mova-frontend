@@ -40,12 +40,19 @@ O projeto utiliza uma paleta de cores baseada em azul:
 npm install
 ```
 
-2. Execute o servidor de desenvolvimento:
+2. Configure as variáveis de ambiente:
+```bash
+.env
+```
+
+Defina `VITE_API_BASE_URL` apontando para o backend.
+
+3. Execute o servidor de desenvolvimento:
 ```bash
 npm run dev
 ```
 
-3. Acesse no navegador:
+4. Acesse no navegador:
 ```
 http://localhost:5173
 ```
