@@ -1,7 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import movaLogo from "../assets/mova_logo.png";
-import AuthLayout from "../layout/AuthLayout";
+import AuthenticatedLayout from "../layout/AuthenticatedLayout";
 import FormField from "../components/FormField";
 import { useFormState } from "../hooks/useFormState";
 import { useFormSubmit } from "../hooks/useFormSubmit";
@@ -245,7 +245,7 @@ function Conta() {
   }
 
   return (
-    <AuthLayout
+    <AuthenticatedLayout
       title="Minha Conta"
       logoSrc={movaLogo}
       logoAlt="Mova Logo"
@@ -491,7 +491,7 @@ function Conta() {
           </SuccessModal>
         </ModalOverlay>
       )}
-    </AuthLayout>
+    </AuthenticatedLayout>
   );
 }
 

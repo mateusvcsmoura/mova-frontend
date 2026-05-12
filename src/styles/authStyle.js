@@ -938,3 +938,114 @@ export const ContactText = styled.p`
   color: #555;
   margin: 0;
 `;
+
+export const SearchWrapper = styled.div`
+  width: 100%;
+  margin-bottom: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+`;
+ 
+export const SearchInputWrapper = styled.div`
+  position: relative;
+  width: 100%;
+`;
+ 
+export const SearchInput = styled.input`
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.7rem 2.5rem 0.7rem 0.9rem;
+  border: 1.5px solid #003366;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+ 
+  &:focus {
+    outline: none;
+    border-color: #aec5e7;
+    box-shadow: 0 0 0 3px rgba(174, 197, 231, 0.3);
+  }
+`;
+ 
+export const SearchIcon = styled.span`
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.1rem;
+  pointer-events: none;
+  color: #003366;
+`;
+ 
+export const FiltersRow = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+`;
+ 
+export const FilterSelect = styled.select`
+  flex: 1;
+  min-width: 120px;
+  padding: 0.55rem 0.7rem;
+  border: 1.5px solid #003366;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  background: #fff;
+  color: #003366;
+  cursor: pointer;
+ 
+  &:focus {
+    outline: none;
+    border-color: #aec5e7;
+    box-shadow: 0 0 0 3px rgba(174, 197, 231, 0.3);
+  }
+`;
+ 
+export const FilterToggle = styled.button`
+  padding: 0.55rem 0.9rem;
+  border: 1.5px solid ${(p) => (p.active ? "#003366" : "#ccc")};
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-family: inherit;
+  background: ${(p) => (p.active ? "#003366" : "#fff")};
+  color: ${(p) => (p.active ? "#fff" : "#555")};
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+ 
+  &:hover {
+    border-color: #003366;
+  }
+`;
+ 
+export const ClearButton = styled.button`
+  background: none;
+  border: none;
+  color: #003366;
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  align-self: flex-start;
+ 
+  &:hover {
+    color: #001f4d;
+  }
+`;
+ 
+export const StatusMessage = styled.p`
+  text-align: center;
+  color: #777;
+  font-size: 0.9rem;
+  margin: 2rem 0;
+`;
+ 
+export const ResultCount = styled.p`
+  font-size: 0.82rem;
+  color: #555;
+  margin: 0 0 0.5rem;
+`;

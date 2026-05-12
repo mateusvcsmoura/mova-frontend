@@ -409,6 +409,7 @@ export async function registerLocatario(values) {
       body: JSON.stringify({
         ...buildContaPayload(values),
         senha: values.password,
+        cargo: "LOCATARIO", 
       }),
     });
 
@@ -450,6 +451,7 @@ export async function registerLocador(values) {
       body: JSON.stringify({
         ...buildContaPayload(values),
         senha: values.password,
+        cargo: "LOCATARIO", 
       }),
     });
 

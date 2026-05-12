@@ -9,10 +9,12 @@ function AuthLayout({
   footerLinkLabel,
   logoSrc,
   logoAlt = "Logo",
+  topBarSlot,
 }) {
   return (
     <main className="auth-page">
       <section className="auth-card">
+        {topBarSlot}
         {logoSrc && <img src={logoSrc} className="auth-logo" alt={logoAlt} />}
         <h1>{title}</h1>
 

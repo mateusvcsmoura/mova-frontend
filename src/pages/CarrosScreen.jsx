@@ -1,11 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import AuthenticatedLayout from "../layout/AuthenticatedLayout";
 import movaLogo from "../assets/mova_logo.png";
-
-import argoImg from "../assets/fiat-argo-drive.png";
-import hb20Img from "../assets/hiunday-hb20-plus.png";
-import civicImg from "../assets/honda-civic-confort.png";
+import { listVeiculos } from "../services/veiculoService";
 
 import {
     LogoContainer,
@@ -14,86 +11,225 @@ import {
     CarListContainer,
     CarCard,
     CarInfoText,
-    PriceTag
+    PriceTag,
+    SearchWrapper,
+    SearchInputWrapper,
+    SearchInput,
+    SearchIcon,
+    FiltersRow,
+    FilterSelect,
+    FilterToggle,
+    ClearButton,
+    StatusMessage,
+    ResultCount,
 } from "../styles/authStyle";
 
-const carros = [
-    {
-        nome: "Fiat Argo Drive",
-        dados: {
-            marca: "Fiat", modelo: "Argo", ano: 2022,
-            transmissao: "Manual", motor: "1.3L", combustivel: "Flex",
-            autonomia: 455, preco: 99.0, imagem: argoImg,
-            localizacao: "Garagem Norte", disponivel: true,
-        },
-    },
-    {
-        nome: "Hyundai HB20 Plus",
-        dados: {
-            marca: "Hyundai", modelo: "HB20", ano: 2024,
-            transmissao: "Manual", motor: "1.0L", combustivel: "Flex",
-            autonomia: 675, preco: 140.9, imagem: hb20Img,
-            localizacao: "Garagem Sul", disponivel: true,
-        },
-    },
-    {
-        nome: "Honda Civic Confort",
-        dados: {
-            marca: "Honda", modelo: "Civic", ano: 2023,
-            transmissao: "Automática", motor: "2.0L", combustivel: "Gasolina",
-            autonomia: 448, preco: 99.99, imagem: civicImg,
-            localizacao: "Garagem Oeste", disponivel: false,
-        },
-    },
-];
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function formatCambio(cambio) {
+    if (!cambio) return "—";
+    return cambio;
+}
+
+function formatBool(value) {
+    if (value === true) return "Sim";
+    if (value === false) return "Não";
+    return "—";
+}
+
+function formatStatus(status) {
+    const map = {
+        DISPONIVEL: { label: "Disponível", disponivel: true },
+        ALUGADO: { label: "Alugado", disponivel: false },
+        MANUTENCAO: { label: "Em manutenção", disponivel: false },
+    };
+    return map[status] ?? { label: status, disponivel: false };
+}
+
+// ── Componente principal ──────────────────────────────────────────────────────
+
+const CAMBIO_OPTIONS = ["", "Manual", "Automatico"];
 
 function CarrosScreen() {
     const navigate = useNavigate();
 
+    // Estados de busca
+    const [textoBusca, setTextoBusca] = useState("");
+    const [cambioFiltro, setCambioFiltro] = useState("");
+    const [eletricoFiltro, setEletricoFiltro] = useState(null); // null | true | false
+    const [adaptadoFiltro, setAdaptadoFiltro] = useState(null);
+
+    // Estados de dados
+    const [veiculos, setVeiculos] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [erro, setErro] = useState(null);
+
+    // Busca na API
+    const buscar = useCallback(async () => {
+        setLoading(true);
+        setErro(null);
+
+        try {
+            const filters = {};
+            if (cambioFiltro) filters.cambio = cambioFiltro;
+            if (eletricoFiltro !== null) filters.eletrico = eletricoFiltro;
+            if (adaptadoFiltro !== null) filters.adaptado = adaptadoFiltro;
+
+            const resultado = await listVeiculos(filters);
+            setVeiculos(resultado);
+        } catch (e) {
+            setErro(e.message || "Não foi possível carregar os veículos.");
+        } finally {
+            setLoading(false);
+        }
+    }, [cambioFiltro, eletricoFiltro, adaptadoFiltro]);
+
+    // Busca inicial e ao mudar filtros de API
     useEffect(() => {
         document.title = "MOVA - Escolha seu Carro";
-    }, []);
+        buscar();
+    }, [buscar]);
+
+    // Filtragem local por texto (marca, modelo, placa)
+    const veiculosFiltrados = veiculos.filter((v) => {
+        if (!textoBusca.trim()) return true;
+        const termo = textoBusca.toLowerCase();
+        return (
+            v.marca?.toLowerCase().includes(termo) ||
+            v.modelo?.toLowerCase().includes(termo) ||
+            v.placa?.toLowerCase().includes(termo) ||
+            String(v.ano).includes(termo)
+        );
+    });
+
+    const temFiltros =
+        textoBusca || cambioFiltro || eletricoFiltro !== null || adaptadoFiltro !== null;
+
+    function limparFiltros() {
+        setTextoBusca("");
+        setCambioFiltro("");
+        setEletricoFiltro(null);
+        setAdaptadoFiltro(null);
+    }
+
+    function toggleEletrico() {
+        setEletricoFiltro((prev) => (prev === true ? null : true));
+    }
+
+    function toggleAdaptado() {
+        setAdaptadoFiltro((prev) => (prev === true ? null : true));
+    }
 
     return (
         <AuthenticatedLayout>
-
             <LogoContainer>
                 <img src={movaLogo} alt="Mova Logo" />
             </LogoContainer>
 
             <Title>Escolha seu Carro</Title>
 
-            <CarListContainer>
-                {carros.map((carro, index) => (
-                    <CarCard key={index} disponivel={carro.dados.disponivel}>
-                        <img src={carro.dados.imagem} alt={carro.nome} className="car-img" />
+            {/* ── Área de busca ── */}
+            <SearchWrapper>
+                <SearchInputWrapper>
+                    <SearchInput
+                        type="text"
+                        placeholder="Buscar por marca, modelo ou placa…"
+                        value={textoBusca}
+                        onChange={(e) => setTextoBusca(e.target.value)}
+                    />
+                    <SearchIcon>🔍</SearchIcon>
+                </SearchInputWrapper>
 
-                        <h3>{carro.nome}</h3>
+                <FiltersRow>
+                    <FilterSelect
+                        value={cambioFiltro}
+                        onChange={(e) => setCambioFiltro(e.target.value)}
+                    >
+                        <option value="">Câmbio: todos</option>
+                        <option value="Manual">Manual</option>
+                        <option value="Automatico">Automático</option>
+                    </FilterSelect>
 
-                        <div className="info-grid">
-                            <CarInfoText>{carro.dados.marca} • {carro.dados.modelo}</CarInfoText>
-                            <CarInfoText>{carro.dados.ano} • {carro.dados.transmissao}</CarInfoText>
-                            <CarInfoText>Motor: {carro.dados.motor} • {carro.dados.combustivel}</CarInfoText>
-                            <CarInfoText>Autonomia: {carro.dados.autonomia} km</CarInfoText>
-                            <CarInfoText>Local: {carro.dados.localizacao}</CarInfoText>
-                        </div>
+                    <FilterToggle active={eletricoFiltro === true} onClick={toggleEletrico}>
+                        ⚡ Elétrico
+                    </FilterToggle>
 
-                        <PriceTag>R$ {carro.dados.preco.toFixed(2)} / dia</PriceTag>
+                    <FilterToggle active={adaptadoFiltro === true} onClick={toggleAdaptado}>
+                        ♿ Adaptado
+                    </FilterToggle>
 
-                        <PrimaryButton
-                            disabled={!carro.dados.disponivel}
-                            onClick={() => navigate("/escolha-garagem")}
-                            style={{
-                                marginTop: "15px",
-                                opacity: carro.dados.disponivel ? 1 : 0.5,
-                                cursor: carro.dados.disponivel ? "pointer" : "not-allowed",
-                            }}
-                        >
-                            {carro.dados.disponivel ? "Selecionar" : "Indisponível"}
-                        </PrimaryButton>
-                    </CarCard>
-                ))}
-            </CarListContainer>
+                    {temFiltros && (
+                        <ClearButton onClick={limparFiltros}>Limpar filtros</ClearButton>
+                    )}
+                </FiltersRow>
+            </SearchWrapper>
+
+            {/* ── Resultado ── */}
+            {loading && <StatusMessage>Carregando veículos…</StatusMessage>}
+
+            {!loading && erro && (
+                <StatusMessage style={{ color: "#c0392b" }}>{erro}</StatusMessage>
+            )}
+
+            {!loading && !erro && (
+                <>
+                    <ResultCount>
+                        {veiculosFiltrados.length}{" "}
+                        {veiculosFiltrados.length === 1 ? "veículo encontrado" : "veículos encontrados"}
+                    </ResultCount>
+
+                    {veiculosFiltrados.length === 0 ? (
+                        <StatusMessage>Nenhum veículo encontrado com os filtros selecionados.</StatusMessage>
+                    ) : (
+                        <CarListContainer>
+                            {veiculosFiltrados.map((veiculo) => {
+                                const { label, disponivel } = formatStatus(veiculo.status);
+
+                                return (
+                                    <CarCard key={veiculo.id} disponivel={disponivel}>
+                                        <h3>
+                                            {veiculo.marca} {veiculo.modelo}
+                                        </h3>
+
+                                        <div className="info-grid">
+                                            <CarInfoText>
+                                                Placa: <strong>{veiculo.placa}</strong>
+                                            </CarInfoText>
+                                            <CarInfoText>
+                                                Ano: {veiculo.ano} • Câmbio: {formatCambio(veiculo.cambio)}
+                                            </CarInfoText>
+                                            <CarInfoText>
+                                                Capacidade: {veiculo.capacidade} pessoas
+                                            </CarInfoText>
+                                            <CarInfoText>
+                                                Elétrico: {formatBool(veiculo.eletrico)} •{" "}
+                                                Adaptado: {formatBool(veiculo.adaptado)}
+                                            </CarInfoText>
+                                            <CarInfoText
+                                                style={{ color: disponivel ? "#27ae60" : "#c0392b", fontWeight: 600 }}
+                                            >
+                                                {label}
+                                            </CarInfoText>
+                                        </div>
+
+                                        <PrimaryButton
+                                            disabled={!disponivel}
+                                            onClick={() => navigate("/escolha-garagem")}
+                                            style={{
+                                                marginTop: "15px",
+                                                opacity: disponivel ? 1 : 0.5,
+                                                cursor: disponivel ? "pointer" : "not-allowed",
+                                            }}
+                                        >
+                                            {disponivel ? "Selecionar" : "Indisponível"}
+                                        </PrimaryButton>
+                                    </CarCard>
+                                );
+                            })}
+                        </CarListContainer>
+                    )}
+                </>
+            )}
         </AuthenticatedLayout>
     );
 }
