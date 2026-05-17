@@ -53,3 +53,19 @@ export async function listVeiculos(filters = {}) {
   const data = await apiRequest(`/veiculo${query}`, { authToken });
   return data.result ?? [];
 }
+
+/**
+ * Busca os detalhes completos de um veículo pelo id.
+ * Endpoint: GET /veiculo/:id
+ */
+export async function getVeiculoById(id) {
+  if (!id) {
+    throw new Error("ID do veículo não informado.");
+  }
+
+  const session = getAuthSession();
+  const authToken = session?.token;
+  const data = await apiRequest(`/veiculo/${id}`, { authToken });
+
+  return data.result ?? data;
+}

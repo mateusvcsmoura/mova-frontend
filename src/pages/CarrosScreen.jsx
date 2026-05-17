@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import AuthenticatedLayout from "../layout/AuthenticatedLayout";
 import movaLogo from "../assets/mova_logo.png";
 import { listVeiculos } from "../services/veiculoService";
+import { updateJourneyStep } from "../utils/journeyStorage";
 
 import {
     LogoContainer,
@@ -120,6 +121,28 @@ function CarrosScreen() {
         setAdaptadoFiltro((prev) => (prev === true ? null : true));
     }
 
+    function selecionarVeiculo(veiculo) {
+        updateJourneyStep("veiculo", {
+            id: veiculo.id,
+            nome: veiculo.nome ?? `${veiculo.marca ?? ""} ${veiculo.modelo ?? ""}`.trim(),
+            marca: veiculo.marca ?? "",
+            modelo: veiculo.modelo ?? "",
+            categoria: veiculo.categoria ?? veiculo.tipo ?? "",
+            imagem: veiculo.imagem ?? veiculo.image ?? veiculo.foto ?? "",
+            capacidade: veiculo.capacidade ?? "",
+            caracteristicas: veiculo.caracteristicas ?? [],
+            acessibilidade: veiculo.acessibilidade ?? veiculo.adaptado ?? "",
+            cambio: veiculo.cambio ?? veiculo.transmissao ?? "",
+            autonomia: veiculo.autonomia ?? "",
+            combustivel: veiculo.combustivel ?? veiculo.energia ?? "",
+            ano: veiculo.ano ?? "",
+            placa: veiculo.placa ?? "",
+            status: veiculo.status ?? "",
+        });
+
+        navigate("/escolha-garagem-retirada");
+    }
+
     return (
         <AuthenticatedLayout>
             <LogoContainer>
@@ -214,7 +237,7 @@ function CarrosScreen() {
 
                                         <PrimaryButton
                                             disabled={!disponivel}
-                                            onClick={() => navigate("/escolha-garagem-retirada")}
+                                            onClick={() => selecionarVeiculo(veiculo)}
                                             style={{
                                                 marginTop: "15px",
                                                 opacity: disponivel ? 1 : 0.5,

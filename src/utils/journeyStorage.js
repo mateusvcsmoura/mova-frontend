@@ -9,7 +9,23 @@ const EMPTY_STEP = {
   time: "",
 };
 
+const EMPTY_VEHICLE = {
+  id: "",
+  nome: "",
+  marca: "",
+  modelo: "",
+  categoria: "",
+  imagem: "",
+  capacidade: "",
+  caracteristicas: [],
+  acessibilidade: "",
+  cambio: "",
+  autonomia: "",
+  combustivel: "",
+};
+
 const EMPTY_JOURNEY = {
+  veiculo: { ...EMPTY_VEHICLE },
   retirada: { ...EMPTY_STEP },
   devolucao: { ...EMPTY_STEP },
 };
@@ -27,6 +43,7 @@ function readRawJourney() {
 
     const parsed = JSON.parse(stored);
     return {
+      veiculo: { ...EMPTY_VEHICLE, ...(parsed?.veiculo ?? {}) },
       retirada: { ...EMPTY_STEP, ...(parsed?.retirada ?? {}) },
       devolucao: { ...EMPTY_STEP, ...(parsed?.devolucao ?? {}) },
     };

@@ -8,6 +8,7 @@ import TiposDeCarros from "../pages/TiposDeCarros";
 import CarrosScreen from "../pages/CarrosScreen";
 import EscolhaGaragemRetirada from "../pages/EscolhaGaragemRetirada";
 import EscolhaGaragemDevolucao from "../pages/EscolhaGaragemDevolucao";
+import CheckoutReserva from "../pages/CheckoutReserva";
 import Pagamento from "../pages/Pagamento";
 import DesbloqueioDeCarro from "../pages/DesbloqueioDeCarro";
 import Historico from "../pages/Historico";
@@ -45,6 +46,7 @@ function AppRoutes() {
         <Route path="/carros" element={<ProtectedRoute><CarrosScreen /></ProtectedRoute>} />
         <Route path="/escolha-garagem-retirada" element={<ProtectedRoute><EscolhaGaragemRetirada /></ProtectedRoute>} />
         <Route path="/escolha-garagem-devolucao" element={<ProtectedRoute><EscolhaGaragemDevolucao /></ProtectedRoute>} />
+        <Route path="/checkout-reserva" element={<ProtectedRoute><CheckoutReserva /></ProtectedRoute>} />
         <Route path="/pagamento" element={<ProtectedRoute><Pagamento /></ProtectedRoute>} />
         <Route path="/desbloqueio" element={<ProtectedRoute><DesbloqueioDeCarro /></ProtectedRoute>} />
 
@@ -56,6 +58,7 @@ function AppRoutes() {
         <Route path="/escolha-garagem" element={<Navigate to="/escolha-garagem-retirada" replace />} />
         <Route path="/agendamento" element={<Navigate to="/escolha-garagem-retirada" replace />} />
         <Route path="/escolha-data-e-hora" element={<Navigate to="/escolha-garagem-retirada" replace />} />
+        <Route path="/checkout" element={<Navigate to="/checkout-reserva" replace />} />
         <Route path="/modo-de-pagamento" element={<Navigate to="/pagamento" replace />} />
         <Route path="/desbloqueio-de-carro" element={<Navigate to="/desbloqueio" replace />} />
 

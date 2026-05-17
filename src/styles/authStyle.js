@@ -126,6 +126,31 @@ export const PrimaryButton = styled.button`
   }
 `;
 
+export const SecondaryButton = styled.button`
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.8rem;
+  border-radius: 0.7rem;
+  border: 1px solid #aec5e7;
+  background: #f7fbff;
+  color: #003366;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 1.05rem;
+  box-sizing: border-box;
+  transition: background 0.2s, border-color 0.2s, opacity 0.2s;
+
+  &:hover {
+    background: #eef5ff;
+    border-color: #7da2d6;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+`;
+
 // ESTE ERA O QUE ESTAVA FALTANDO E QUEBROU O LOGIN:
 export const FooterText = styled.p`
   margin-top: 1.5rem;

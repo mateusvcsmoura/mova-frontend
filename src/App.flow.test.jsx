@@ -15,9 +15,23 @@ vi.mock("./services/authService", () => ({
   deleteAccount: vi.fn(),
 }));
 
+vi.mock("./services/veiculoService", () => ({
+  getVeiculoById: vi.fn(),
+  listVeiculos: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock("./services/reservationPricing", () => ({
+  getReservationPricing: vi.fn().mockResolvedValue({
+    dailyRate: 250,
+    fees: 49.9,
+    total: 549.9,
+  }),
+}));
+
 import { requestPasswordReset } from "./services/authService";
 import { loginUser } from "./services/authService";
 import { saveAuthSession } from "./services/authSession";
+import { getVeiculoById } from "./services/veiculoService";
 
 const authenticatedUser = {
   id: "1",
@@ -33,12 +47,15 @@ const authenticatedUser = {
 
 const requestPasswordResetMock = vi.mocked(requestPasswordReset);
 const loginUserMock = vi.mocked(loginUser);
+const getVeiculoByIdMock = vi.mocked(getVeiculoById);
 
 describe("Fluxo de autenticacao", () => {
   beforeEach(() => {
     window.localStorage.clear();
+    window.sessionStorage.clear();
     requestPasswordResetMock.mockReset();
     loginUserMock.mockReset();
+    getVeiculoByIdMock.mockReset();
     requestPasswordResetMock.mockResolvedValue({
       mode: "api",
       message: "Solicitacao de recuperacao enviada com sucesso.",
@@ -210,5 +227,65 @@ describe("Fluxo de autenticacao", () => {
     expect(
       await screen.findByRole("heading", { name: /escolha a garagem para retirada/i })
     ).toBeInTheDocument();
+  });
+
+  it("mostra o checkout da reserva com dados persistidos", async () => {
+    saveAuthSession({
+      token: "token-fake",
+      user: authenticatedUser,
+    });
+
+    window.sessionStorage.setItem(
+      "mova_journey_flow",
+      JSON.stringify({
+        veiculo: {
+          id: 42,
+          nome: "Hatch Plus",
+          marca: "Mova",
+          modelo: "Hatch Plus",
+          categoria: "Econômico",
+          imagem: "",
+          capacidade: 4,
+          caracteristicas: ["Ar-condicionado", "Bluetooth"],
+          acessibilidade: "Sim",
+          cambio: "Automático",
+          autonomia: "320 km",
+          combustivel: "Elétrico",
+          placa: "ABC1D23",
+        },
+        retirada: {
+          garageId: 1,
+          garageName: "Garagem Centro",
+          garageAddress: "Rua Principal, 123",
+          date: "10/06/2026",
+          time: "10:00",
+        },
+        devolucao: {
+          garageId: 2,
+          garageName: "Garagem Sul",
+          garageAddress: "Avenida Sul, 456",
+          date: "12/06/2026",
+          time: "10:00",
+        },
+      })
+    );
+
+    getVeiculoByIdMock.mockResolvedValue({
+      id: 42,
+      nome: "Hatch Plus",
+      categoria: "Econômico",
+      cambio: "Automático",
+      capacidade: 4,
+      caracteristicas: ["Ar-condicionado", "Bluetooth"],
+    });
+
+    window.history.pushState({}, "", "/checkout-reserva");
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: /checkout da reserva/i })).toBeInTheDocument();
+    expect(screen.getByText(/hatch plus/i)).toBeInTheDocument();
+    expect(screen.getByText(/garagem centro/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /confirmar e seguir para pagamento/i })).toBeInTheDocument();
   });
 });
