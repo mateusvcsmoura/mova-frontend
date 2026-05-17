@@ -214,7 +214,7 @@ function CarrosScreen() {
 
                                         <PrimaryButton
                                             disabled={!disponivel}
-                                            onClick={() => navigate("/escolha-garagem")}
+                                            onClick={() => navigate("/escolha-garagem-retirada")}
                                             style={{
                                                 marginTop: "15px",
                                                 opacity: disponivel ? 1 : 0.5,

@@ -16,6 +16,12 @@ const BaseInputStyles = css`
     border-color: #aec5e7;
     box-shadow: 0 0 0 3px rgba(174, 197, 231, 0.3);
   }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+    background-color: #f7fafc;
+  }
 `;
 
 export const AuthPage = styled.div`
@@ -113,6 +119,11 @@ export const PrimaryButton = styled.button`
   transition: opacity 0.2s;
 
   &:hover { opacity: 0.9; }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
 `;
 
 // ESTE ERA O QUE ESTAVA FALTANDO E QUEBROU O LOGIN:
@@ -165,7 +176,9 @@ export const OptionCard = styled.div`
   cursor: pointer;
   box-sizing: border-box;
   transition: transform 0.2s;
-   margin: calc(10px + 0.25rem) 0;
+  margin: calc(10px + 0.25rem) 0;
+  border: 2px solid ${props => props.$selected ? '#aec5e7' : 'transparent'};
+  box-shadow: ${props => props.$selected ? '0 0 0 3px rgba(174, 197, 231, 0.2)' : 'none'};
 
   &:hover { transform: scale(1.02); }
 
@@ -189,6 +202,111 @@ export const GarageInfo = styled.div`
   text-align: left;
  
   p { margin: 2px 0 0 0; font-size: 0.85rem; color: #dcdcdc; }
+`;
+
+export const JourneySection = styled.section`
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin-top: 0.3rem;
+`;
+
+export const JourneySectionHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+`;
+
+export const JourneySectionTitle = styled.h2`
+  margin: 0;
+  color: #003366;
+  font-size: 1.05rem;
+`;
+
+export const JourneySectionHint = styled.p`
+  margin: -0.15rem 0 0;
+  color: #555;
+  font-size: 0.92rem;
+  line-height: 1.4;
+`;
+
+export const GarageActionsRow = styled.div`
+  display: flex;
+  justify-content: center;
+  width: 100%;
+`;
+
+export const TextButton = styled.button`
+  border: none;
+  background: transparent;
+  color: #003366;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+
+  &:hover {
+    color: #2b5ba8;
+  }
+`;
+
+export const JourneyFieldGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  width: 100%;
+`;
+
+export const JourneyFieldLabel = styled.label`
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #003366;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+`;
+
+export const JourneyFieldsGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.8rem;
+
+  @media (min-width: 520px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+`;
+
+export const JourneySummaryCard = styled.div`
+  width: 100%;
+  max-width: 400px;
+  padding: 1rem 1.1rem;
+  border-radius: 12px;
+  border: 1px solid #aec5e7;
+  background: linear-gradient(135deg, #003366, #2b5ba8);
+  box-sizing: border-box;
+`;
+
+export const JourneySummaryLabel = styled.span`
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+  margin-bottom: 0.35rem;
+`;
+
+export const JourneySummaryValue = styled.p`
+  margin: 0;
+  color: #ffffff;
+  font-size: 0.98rem;
+  line-height: 1.45;
+  font-weight: 600;
 `;
 
 export const HeaderIcons = styled.div`

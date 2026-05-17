@@ -1,4 +1,5 @@
 ﻿import { apiRequest, isApiConfigured } from "./apiClient";
+import { normalizeCargo } from "./authIdentity";
 import {
   clearAuthSession,
   getAuthSession,
@@ -32,6 +33,7 @@ function normalizeUserProfile(values) {
     profileId: values.profileId,
     name: values.name,
     email: values.email,
+    cargo: normalizeCargo(values.cargo || values.profileType),
     profileType: values.profileType,
     empresa: values.empresa,
     cnpj: values.cnpj,
@@ -72,6 +74,20 @@ function hasProfileFields(value) {
 
 function normalizeEmail(email) {
   return typeof email === "string" ? email.trim().toLowerCase() : "";
+}
+
+function resolveCargo(cargo, profile) {
+  const normalizedCargo = normalizeCargo(cargo);
+
+  if (normalizedCargo) {
+    return normalizedCargo;
+  }
+
+  if (profile) {
+    return normalizeCargo(profile.cargo || profile.profileType);
+  }
+
+  return "";
 }
 
 function onlyDigits(value) {
@@ -164,6 +180,7 @@ function normalizeApiUser(payload, fallbackEmail) {
   const result = isObject(root.result) ? root.result : null;
   const data = isObject(root.data) ? root.data : null;
   const nestedData = isObject(result?.data) ? result.data : null;
+  const cargo = resolveCargo(root.cargo || result?.cargo || data?.cargo, result || data || root);
   const source = pickProfileSource([
     root.user,
     root.conta,
@@ -187,6 +204,7 @@ function normalizeApiUser(payload, fallbackEmail) {
     id: source.id || source._id,
     name: source.nome || source.name || source.nomeCompleto || source.nome_completo || source.fullName,
     email: source.email || fallbackEmail,
+    cargo: resolveCargo(source.cargo || source.profileType || cargo, source),
     empresa: source.empresa,
     cnpj: source.cnpj,
     celphone: source.telefone || source.celular || source.celphone,
@@ -198,15 +216,7 @@ function normalizeApiUser(payload, fallbackEmail) {
 }
 
 function resolveProfileType(profileType, profile) {
-  if (profileType === "locador" || profileType === "locatario") {
-    return profileType;
-  }
-
-  if (profile?.empresa || profile?.cnpj) {
-    return "locador";
-  }
-
-  return "locatario";
+  return resolveCargo(profileType, profile).toLowerCase();
 }
 
 function isProfileNode(value) {
@@ -216,53 +226,66 @@ function isProfileNode(value) {
 function normalizeCurrentUserFromMe(payload) {
   const root = isObject(payload) ? payload : {};
   const result = isObject(root.result) ? root.result : {};
-  const locadorNode = isProfileNode(result.locador) ? result.locador : null;
-  const locatarioNode = isProfileNode(result.locatario) ? result.locatario : null;
-  const explicitProfileType = root.profileType || result.profileType || root.tipoPerfil || result.tipoPerfil || "";
+  const conta = isObject(result.conta) ? result.conta : result;
+  const locadorNode = isProfileNode(conta.locador) ? conta.locador : null;
+  const locatarioNode = isProfileNode(conta.locatario) ? conta.locatario : null;
+  let explicitProfileType =
+    root.profileType ||
+    result.profileType ||
+    conta.profileType ||
+    root.tipoPerfil ||
+    result.tipoPerfil ||
+    conta.tipoPerfil ||
+    root.cargo ||
+    result.cargo ||
+    conta.cargo ||
+    "";
 
-  let profileType = resolveProfileType(explicitProfileType, result);
+  let cargo = resolveCargo(explicitProfileType, conta);
   let roleData = {};
 
-  if (profileType === "locador" && locadorNode) {
-    profileType = "locador";
+  if (cargo === "LOCADOR" && locadorNode) {
     roleData = locadorNode;
-  } else if (profileType === "locatario" && locatarioNode) {
-    profileType = "locatario";
+    cargo = "LOCADOR";
+  } else if (cargo === "LOCATARIO" && locatarioNode) {
     roleData = locatarioNode;
+    cargo = "LOCATARIO";
   } else if (locadorNode && locatarioNode) {
-    profileType = "locador";
+    cargo = "LOCADOR";
     roleData = locadorNode;
   } else if (locadorNode) {
-    profileType = "locador";
+    cargo = "LOCADOR";
     roleData = locadorNode;
   } else if (locatarioNode) {
-    profileType = "locatario";
+    cargo = "LOCATARIO";
     roleData = locatarioNode;
   }
 
-  const accountId = result.id || result.contaId || roleData.contaId || roleData.accountId;
+  const accountId = conta.id || result.id || result.contaId || roleData.contaId || roleData.accountId;
   const profileId = roleData.id || roleData._id;
 
   const user = {
     id: accountId || profileId,
     accountId: accountId || profileId,
     profileId: profileId || "",
-    name: result.nome || result.name,
-    email: result.email,
-    celphone: result.telefone || roleData.telefone || roleData.celular || roleData.celphone || "",
-    profileType,
+    name: conta.nome || conta.name || result.nome || result.name,
+    email: conta.email || result.email,
+    cargo,
+    profileType: cargo.toLowerCase(),
+    celphone: conta.telefone || conta.celular || conta.celphone || roleData.telefone || roleData.celular || roleData.celphone || "",
     empresa: roleData.empresa || "",
     cnpj: roleData.cnpj || "",
     cpf: roleData.cpf || "",
     cnh: roleData.cnh || "",
-    address: result.endereco || result.address || roleData.endereco || roleData.address || "",
-    cep: result.cep || roleData.cep || "",
+    address: conta.endereco || conta.address || result.endereco || result.address || roleData.endereco || roleData.address || "",
+    cep: conta.cep || result.cep || roleData.cep || "",
   };
 
   return {
     user: {
       ...user,
-      profileType: resolveProfileType(profileType, user),
+      cargo: resolveCargo(cargo, user),
+      profileType: resolveProfileType(cargo, user),
     },
     profileSource: locadorNode ? "locador" : locatarioNode ? "locatario" : "none",
   };
@@ -282,10 +305,19 @@ function persistUserProfile(user, token) {
   const session = getAuthSession();
   const nextToken = token ?? session?.token ?? null;
   const previousUser = session?.user || {};
+  const nextCargo = resolveCargo(user?.cargo || user?.profileType || previousUser.cargo || previousUser.profileType, {
+    ...previousUser,
+    ...user,
+  });
   const nextUser = {
     ...previousUser,
     ...user,
   };
+
+  nextUser.cargo = nextCargo || nextUser.cargo || "";
+  if (nextUser.cargo) {
+    nextUser.profileType = nextUser.cargo.toLowerCase();
+  }
 
   if (!nextUser.id) {
     nextUser.id = nextUser.accountId || previousUser.id || "";
@@ -340,8 +372,10 @@ export async function loginUser({ email, senha }) {
     const user = {
       ...apiUser,
       ...currentUser,
-      profileType: resolveProfileType(currentUser?.profileType, currentUser),
+      cargo: resolveCargo(currentUser?.cargo || apiUser?.cargo || currentUser?.profileType || apiUser?.profileType, currentUser || apiUser),
     };
+
+    user.profileType = resolveProfileType(user.cargo || user.profileType, user);
 
     authDebug("loginUser.profileMerge", {
       email,
@@ -409,7 +443,6 @@ export async function registerLocatario(values) {
       body: JSON.stringify({
         ...buildContaPayload(values),
         senha: values.password,
-        cargo: "LOCATARIO", 
       }),
     });
 
@@ -451,7 +484,6 @@ export async function registerLocador(values) {
       body: JSON.stringify({
         ...buildContaPayload(values),
         senha: values.password,
-        cargo: "LOCATARIO", 
       }),
     });
 
@@ -489,7 +521,7 @@ export async function updateUserProfile(values) {
   const sessionUser = session?.user || {};
   const accountId = values.id || values.accountId || sessionUser.accountId || sessionUser.id;
   let profileId = values.profileId || sessionUser.profileId;
-  let profileType = resolveProfileType(values.profileType || sessionUser.profileType, {
+  let cargo = resolveCargo(values.cargo || values.profileType || sessionUser.cargo || sessionUser.profileType, {
     ...sessionUser,
     ...values,
   });
@@ -502,7 +534,7 @@ export async function updateUserProfile(values) {
     throw new Error("Sessao expirada. Faca login novamente.");
   }
 
-  if ((profileType === "locatario" || profileType === "locador") && !profileId) {
+  if ((cargo === "LOCATARIO" || cargo === "LOCADOR") && !profileId) {
     try {
       const freshProfile = await fetchCurrentUserProfile({
         authToken: token,
@@ -510,7 +542,7 @@ export async function updateUserProfile(values) {
       });
 
       if (freshProfile) {
-        profileType = resolveProfileType(freshProfile.profileType || profileType, {
+        cargo = resolveCargo(freshProfile.cargo || freshProfile.profileType || cargo, {
           ...freshProfile,
           ...values,
         });
@@ -530,7 +562,7 @@ export async function updateUserProfile(values) {
       }),
     });
 
-    if (profileType === "locatario") {
+    if (cargo === "LOCATARIO") {
       if (!profileId) {
         throw new Error("Nao foi possivel identificar o perfil vinculado da conta autenticada.");
       }
@@ -546,7 +578,7 @@ export async function updateUserProfile(values) {
       }
     }
 
-    if (profileType === "locador") {
+    if (cargo === "LOCADOR") {
       if (!profileId) {
         throw new Error("Nao foi possivel identificar o perfil vinculado da conta autenticada.");
       }
@@ -569,7 +601,8 @@ export async function updateUserProfile(values) {
       id: accountId || sessionUser.id || apiUser.id || normalizedProfile.id || "",
       accountId: accountId || sessionUser.accountId || sessionUser.id || apiUser.id || normalizedProfile.id || "",
       profileId: profileId || sessionUser.profileId || "",
-      profileType,
+      cargo,
+      profileType: resolveProfileType(cargo, normalizedProfile),
     };
     persistUserProfile(mergedUser, token);
 

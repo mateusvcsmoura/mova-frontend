@@ -6,8 +6,8 @@ import Login from "../pages/Login";
 import Conta from "../pages/Conta";
 import TiposDeCarros from "../pages/TiposDeCarros";
 import CarrosScreen from "../pages/CarrosScreen";
-import EscolhaGaragem from "../pages/EscolhaGaragem";
-import DataHora from "../pages/DataHora";
+import EscolhaGaragemRetirada from "../pages/EscolhaGaragemRetirada";
+import EscolhaGaragemDevolucao from "../pages/EscolhaGaragemDevolucao";
 import Pagamento from "../pages/Pagamento";
 import DesbloqueioDeCarro from "../pages/DesbloqueioDeCarro";
 import Historico from "../pages/Historico";
@@ -22,7 +22,7 @@ function NotFound() {
 function ProtectedRoute({ children }) {
   const session = getAuthSession();
 
-  if (!session?.user) {
+  if (!session?.token) {
     return <Navigate to="/login" replace />;
   }
 
@@ -43,8 +43,8 @@ function AppRoutes() {
 
         <Route path="/tipos-carros" element={<ProtectedRoute><TiposDeCarros /></ProtectedRoute>} />
         <Route path="/carros" element={<ProtectedRoute><CarrosScreen /></ProtectedRoute>} />
-        <Route path="/escolha-garagem" element={<ProtectedRoute><EscolhaGaragem /></ProtectedRoute>} />
-        <Route path="/agendamento" element={<ProtectedRoute><DataHora /></ProtectedRoute>} />
+        <Route path="/escolha-garagem-retirada" element={<ProtectedRoute><EscolhaGaragemRetirada /></ProtectedRoute>} />
+        <Route path="/escolha-garagem-devolucao" element={<ProtectedRoute><EscolhaGaragemDevolucao /></ProtectedRoute>} />
         <Route path="/pagamento" element={<ProtectedRoute><Pagamento /></ProtectedRoute>} />
         <Route path="/desbloqueio" element={<ProtectedRoute><DesbloqueioDeCarro /></ProtectedRoute>} />
 
@@ -53,7 +53,9 @@ function AppRoutes() {
         <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
 
         <Route path="/carros-screens" element={<Navigate to="/carros" replace />} />
-        <Route path="/escolha-data-e-hora" element={<Navigate to="/agendamento" replace />} />
+        <Route path="/escolha-garagem" element={<Navigate to="/escolha-garagem-retirada" replace />} />
+        <Route path="/agendamento" element={<Navigate to="/escolha-garagem-retirada" replace />} />
+        <Route path="/escolha-data-e-hora" element={<Navigate to="/escolha-garagem-retirada" replace />} />
         <Route path="/modo-de-pagamento" element={<Navigate to="/pagamento" replace />} />
         <Route path="/desbloqueio-de-carro" element={<Navigate to="/desbloqueio" replace />} />
 

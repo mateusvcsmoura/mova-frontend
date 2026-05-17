@@ -19,6 +19,18 @@ import { requestPasswordReset } from "./services/authService";
 import { loginUser } from "./services/authService";
 import { saveAuthSession } from "./services/authSession";
 
+const authenticatedUser = {
+  id: "1",
+  name: "Cliente MOVA",
+  email: "cliente@mova.com",
+  profileType: "locatario",
+  celphone: "(11) 99999-9999",
+  cpf: "123.456.789-10",
+  cnh: "12345678910",
+  address: "Rua Exemplo, 100",
+  cep: "12345-678",
+};
+
 const requestPasswordResetMock = vi.mocked(requestPasswordReset);
 const loginUserMock = vi.mocked(loginUser);
 
@@ -37,17 +49,7 @@ describe("Fluxo de autenticacao", () => {
         mode: "api",
         message: "Login realizado com sucesso.",
         token: "token-fake",
-        user: {
-          id: "1",
-          name: "Cliente MOVA",
-          email: "cliente@mova.com",
-          profileType: "locatario",
-          celphone: "(11) 99999-9999",
-          cpf: "123.456.789-10",
-          cnh: "12345678910",
-          address: "Rua Exemplo, 100",
-          cep: "12345-678",
-        },
+        user: authenticatedUser,
       };
 
       saveAuthSession({ token: response.token, user: response.user });
@@ -159,5 +161,54 @@ describe("Fluxo de autenticacao", () => {
     render(<App />);
 
     expect(screen.getByRole("heading", { name: /login/i })).toBeInTheDocument();
+  });
+
+  it("mostra a nova tela de retirada e bloqueia o avanço ate selecionar data e hora", async () => {
+    const user = userEvent.setup();
+
+    saveAuthSession({
+      token: "token-fake",
+      user: authenticatedUser,
+    });
+
+    window.history.pushState({}, "", "/escolha-garagem-retirada");
+
+    render(<App />);
+
+    expect(
+      await screen.findByRole("heading", { name: /escolha a garagem para retirada/i })
+    ).toBeInTheDocument();
+
+    const continueButton = screen.getByRole("button", { name: /ir para devolução/i });
+    const dateInput = screen.getByPlaceholderText(/digite a data/i);
+    const timeInput = screen.getByPlaceholderText(/digite o horário/i);
+
+    expect(continueButton).toBeDisabled();
+    expect(dateInput).toBeDisabled();
+    expect(timeInput).toBeDisabled();
+
+    await user.click(screen.getByRole("button", { name: /garagem centro/i }));
+
+    expect(screen.getByText(/garagem centro/i)).toBeInTheDocument();
+    expect(screen.queryByText(/garagem sul/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/garagem norte/i)).not.toBeInTheDocument();
+    expect(dateInput).not.toBeDisabled();
+    expect(timeInput).not.toBeDisabled();
+    expect(continueButton).toBeDisabled();
+  });
+
+  it("redireciona a rota legada de agendamento para a nova retirada", async () => {
+    saveAuthSession({
+      token: "token-fake",
+      user: authenticatedUser,
+    });
+
+    window.history.pushState({}, "", "/agendamento");
+
+    render(<App />);
+
+    expect(
+      await screen.findByRole("heading", { name: /escolha a garagem para retirada/i })
+    ).toBeInTheDocument();
   });
 });
