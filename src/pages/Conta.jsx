@@ -1,11 +1,12 @@
 ﻿import { useEffect, useMemo, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import movaLogo from "../assets/mova_logo.png";
 import AuthenticatedLayout from "../layout/AuthenticatedLayout";
 import FormField from "../components/FormField";
 import { useFormState } from "../hooks/useFormState";
 import { useFormSubmit } from "../hooks/useFormSubmit";
-import { ModalOverlay, SuccessModal, SuccessTitle, SuccessSubtitle } from "../styles/authStyle";
+import { getUserCargo } from "../services/authIdentity";
+import { ModalOverlay, StatusMessage, SuccessModal, SuccessTitle, SuccessSubtitle } from "../styles/authStyle";
 import { clearAuthSession, getAuthSession } from "../services/authSession";
 import {
   changePassword,
@@ -28,21 +29,11 @@ function contaDebug(label, payload) {
   console.groupEnd();
 }
 
-function normalizeProfileType(profileType, profile) {
-  if (profile?.empresa || profile?.cnpj) {
-    return "locador";
-  }
-
-  if (profileType === "locador" || profileType === "locatario") {
-    return profileType;
-  }
-
-  return "locatario";
-}
-
 function Conta() {
   const navigate = useNavigate();
-  const [sessionUser] = useState(() => getAuthSession()?.user || null);
+  const authSession = getAuthSession();
+  const [profileStatus, setProfileStatus] = useState(() => (authSession?.token ? "loading" : "error"));
+  const [profileFeedback, setProfileFeedback] = useState(null);
   const [passwordValues, setPasswordValues] = useState({
     senhaAtual: "",
     novaSenha: "",
@@ -53,19 +44,24 @@ function Conta() {
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
+  const sessionUser = authSession?.user || null;
+  const authToken = authSession?.token || null;
+
   const initialValues = useMemo(() => {
     const user = sessionUser || {};
+    const cargo = getUserCargo(user);
 
     return {
       id: user.id || "",
       name: user.name || "",
       email: user.email || "",
-      profileType: normalizeProfileType(user.profileType, user),
-      empresa: user.empresa || "",
-      cnpj: user.cnpj || "",
+      cargo,
+      profileType: cargo.toLowerCase(),
+      empresa: cargo === "LOCADOR" ? user.empresa || "" : "",
+      cnpj: cargo === "LOCADOR" ? user.cnpj || "" : "",
       celphone: user.celphone || "",
-      cpf: user.cpf || "",
-      cnh: user.cnh || "",
+      cpf: cargo === "LOCATARIO" ? user.cpf || "" : "",
+      cnh: cargo === "LOCATARIO" ? user.cnh || "" : "",
       address: user.address || "",
       cep: user.cep || "",
     };
@@ -84,7 +80,12 @@ function Conta() {
   useEffect(() => {
     let isMounted = true;
 
-    if (!sessionUser) {
+    if (!authToken) {
+      setProfileStatus("error");
+      setProfileFeedback({
+        type: "error",
+        message: "Sua sessao expirou. Entre novamente para acessar a conta.",
+      });
       return () => {
         isMounted = false;
       };
@@ -92,9 +93,13 @@ function Conta() {
 
     contaDebug("hydrateProfile.sessionUser", sessionUser);
 
+    setProfileStatus("loading");
+    setProfileFeedback(null);
+
     async function hydrateProfile() {
       try {
         const freshProfile = await fetchCurrentUserProfile({
+          authToken,
           persistToSession: true,
         });
 
@@ -105,17 +110,18 @@ function Conta() {
         }
 
         setValues((prev) => {
-          const nextProfileType = normalizeProfileType(freshProfile.profileType, freshProfile);
+          const nextCargo = getUserCargo(freshProfile);
           const nextValues = {
             id: freshProfile.accountId || freshProfile.id || prev.id,
             name: freshProfile.name || "",
             email: freshProfile.email || "",
-            profileType: nextProfileType,
-            empresa: nextProfileType === "locador" ? freshProfile.empresa || "" : "",
-            cnpj: nextProfileType === "locador" ? freshProfile.cnpj || "" : "",
+            cargo: nextCargo,
+            profileType: nextCargo.toLowerCase(),
+            empresa: nextCargo === "LOCADOR" ? freshProfile.empresa || "" : "",
+            cnpj: nextCargo === "LOCADOR" ? freshProfile.cnpj || "" : "",
             celphone: freshProfile.celphone || "",
-            cpf: nextProfileType === "locatario" ? freshProfile.cpf || "" : "",
-            cnh: nextProfileType === "locatario" ? freshProfile.cnh || "" : "",
+            cpf: nextCargo === "LOCATARIO" ? freshProfile.cpf || "" : "",
+            cnh: nextCargo === "LOCATARIO" ? freshProfile.cnh || "" : "",
             address: freshProfile.address || "",
             cep: freshProfile.cep || "",
           };
@@ -123,9 +129,24 @@ function Conta() {
           contaDebug("hydrateProfile.nextFormValues", nextValues);
           return nextValues;
         });
+
+        setProfileStatus("ready");
       } catch (error) {
         contaDebug("hydrateProfile.error", error);
-        // If API fetch fails, keep current session profile in the form.
+        const message = error instanceof Error ? error.message : "Nao foi possivel carregar os dados da conta.";
+
+        if (/sessao expirada|faca login novamente/i.test(message)) {
+          clearAuthSession();
+          setSession(null);
+        }
+
+        if (isMounted) {
+          setProfileStatus("error");
+          setProfileFeedback({
+            type: "error",
+            message,
+          });
+        }
       }
     }
 
@@ -134,7 +155,7 @@ function Conta() {
     return () => {
       isMounted = false;
     };
-  }, [sessionUser, setValues]);
+  }, [authToken, setValues]);
 
   function applyMask(field, value) {
     if (field === "celphone") return maskCelphone(value);
@@ -236,12 +257,69 @@ function Conta() {
     onSubmit: updateUserProfile,
   });
 
-  const isLocador = values.profileType === "locador";
+  const isLocador = getUserCargo(values) === "LOCADOR";
   const nameLabel = isLocador ? "Nome do Proprietário" : "Nome Completo";
   const profileLabel = isLocador ? "Perfil: Locador" : "Perfil: Locatário";
 
-  if (!sessionUser) {
-    return <Navigate to="/login" replace />;
+  if (!authToken) {
+    return (
+      <AuthenticatedLayout
+        title="Minha Conta"
+        logoSrc={movaLogo}
+        logoAlt="Mova Logo"
+        footerText="Quer sair da conta?"
+        footerLinkTo="/login"
+        footerLinkLabel="Voltar ao login"
+      >
+        <p className="auth-feedback auth-feedback--error" role="status" aria-live="polite">
+          {profileFeedback?.message || "Sua sessao expirou. Entre novamente para acessar a conta."}
+        </p>
+        <div className="auth-actions">
+          <button type="button" className="auth-button" onClick={handleLogout}>
+            Voltar ao login
+          </button>
+        </div>
+      </AuthenticatedLayout>
+    );
+  }
+
+  if (profileStatus === "loading" && !sessionUser) {
+    return (
+      <AuthenticatedLayout
+        title="Minha Conta"
+        logoSrc={movaLogo}
+        logoAlt="Mova Logo"
+        footerText="Quer sair da conta?"
+        footerLinkTo="/login"
+        footerLinkLabel="Voltar ao login"
+      >
+        <p className="auth-feedback auth-feedback--warning" role="status" aria-live="polite">
+          Carregando dados da conta...
+        </p>
+      </AuthenticatedLayout>
+    );
+  }
+
+  if (profileStatus === "error" && !sessionUser) {
+    return (
+      <AuthenticatedLayout
+        title="Minha Conta"
+        logoSrc={movaLogo}
+        logoAlt="Mova Logo"
+        footerText="Quer sair da conta?"
+        footerLinkTo="/login"
+        footerLinkLabel="Voltar ao login"
+      >
+        <p className="auth-feedback auth-feedback--error" role="status" aria-live="polite">
+          {profileFeedback?.message || "Nao foi possivel carregar os dados da conta."}
+        </p>
+        <div className="auth-actions">
+          <button type="button" className="auth-button" onClick={handleLogout}>
+            Voltar ao login
+          </button>
+        </div>
+      </AuthenticatedLayout>
+    );
   }
 
   return (
@@ -253,6 +331,18 @@ function Conta() {
       footerLinkTo="/login"
       footerLinkLabel="Voltar ao login"
     >
+      {profileStatus === "loading" && (
+        <StatusMessage role="status" aria-live="polite">
+          Atualizando dados da conta...
+        </StatusMessage>
+      )}
+
+      {profileFeedback && profileStatus === "error" && (
+        <p className={`auth-feedback auth-feedback--${profileFeedback.type}`} role="status" aria-live="polite">
+          {profileFeedback.message}
+        </p>
+      )}
+
       <p className="auth-profile-badge" role="status" aria-live="polite">
         {profileLabel}
       </p>
@@ -275,6 +365,7 @@ function Conta() {
           required
           error={errors.name}
           autoComplete="name"
+          disabled={profileStatus === "loading"}
         />
 
         <FormField
@@ -288,6 +379,7 @@ function Conta() {
           required
           error={errors.email}
           autoComplete="email"
+          disabled={profileStatus === "loading"}
         />
 
         <FormField
@@ -302,6 +394,7 @@ function Conta() {
           error={errors.celphone}
           inputMode="numeric"
           autoComplete="tel-national"
+          disabled={profileStatus === "loading"}
         />
 
         <FormField
@@ -315,6 +408,7 @@ function Conta() {
           required
           error={errors.address}
           autoComplete="street-address"
+          disabled={profileStatus === "loading"}
         />
 
         <FormField
@@ -329,6 +423,7 @@ function Conta() {
           error={errors.cep}
           inputMode="numeric"
           autoComplete="postal-code"
+          disabled={profileStatus === "loading"}
         />
 
         {isLocador && (
@@ -344,6 +439,7 @@ function Conta() {
               required
               error={errors.empresa}
               autoComplete="organization"
+              disabled={profileStatus === "loading"}
             />
 
             <FormField
@@ -357,6 +453,7 @@ function Conta() {
               required
               error={errors.cnpj}
               inputMode="numeric"
+              disabled={profileStatus === "loading"}
             />
           </>
         )}
@@ -374,6 +471,7 @@ function Conta() {
               required
               error={errors.cpf}
               inputMode="numeric"
+              disabled={profileStatus === "loading"}
             />
 
             <FormField
@@ -387,15 +485,16 @@ function Conta() {
               required
               error={errors.cnh}
               inputMode="numeric"
+              disabled={profileStatus === "loading"}
             />
           </>
         )}
 
         <div className="auth-actions">
-          <button type="submit" className="auth-button" disabled={isSubmitting}>
+          <button type="submit" className="auth-button" disabled={isSubmitting || profileStatus === "loading"}>
             {isSubmitting ? "Salvando..." : "Salvar alteracoes"}
           </button>
-          <button type="button" className="auth-button-secondary" onClick={handleLogout}>
+          <button type="button" className="auth-button-secondary" onClick={handleLogout} disabled={profileStatus === "loading"}>
             Sair
           </button>
         </div>
@@ -417,6 +516,7 @@ function Conta() {
           value={passwordValues.senhaAtual}
           onChange={(e) => handlePasswordFieldChange("senhaAtual", e.target.value)}
           required
+          disabled={profileStatus === "loading"}
         />
 
         <FormField
@@ -428,6 +528,7 @@ function Conta() {
           value={passwordValues.novaSenha}
           onChange={(e) => handlePasswordFieldChange("novaSenha", e.target.value)}
           required
+          disabled={profileStatus === "loading"}
         />
 
         <FormField
@@ -439,17 +540,18 @@ function Conta() {
           value={passwordValues.confirmarNovaSenha}
           onChange={(e) => handlePasswordFieldChange("confirmarNovaSenha", e.target.value)}
           required
+          disabled={profileStatus === "loading"}
         />
 
         <div className="auth-actions">
-          <button type="submit" className="auth-button" disabled={isChangingPassword}>
+          <button type="submit" className="auth-button" disabled={isChangingPassword || profileStatus === "loading"}>
             {isChangingPassword ? "Alterando..." : "Alterar senha"}
           </button>
           <button
             type="button"
             className="auth-button-secondary"
             onClick={handleDeleteAccount}
-            disabled={isDeletingAccount}
+            disabled={isDeletingAccount || profileStatus === "loading"}
           >
             {isDeletingAccount ? "Deletando..." : "Deletar conta"}
           </button>

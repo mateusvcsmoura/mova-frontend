@@ -178,7 +178,7 @@ export function validateLocadorRegisterForm(values) {
 
 export function validateProfileForm(values) {
   const nextErrors = {};
-  const isLocador = values.profileType === "locador";
+  const isLocador = values.cargo === "LOCADOR" || values.profileType === "locador";
 
   if (!values.name.trim()) {
     nextErrors.name = "Informe seu nome completo.";

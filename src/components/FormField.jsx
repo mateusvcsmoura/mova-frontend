@@ -13,6 +13,7 @@
   inputState,
   inputMode,
   autoComplete,
+  disabled = false,
 }) {
   const hintId = `${id}-hint`;
   const hasMessage = Boolean(error || helperText);
@@ -39,6 +40,7 @@
         data-state={dataState}
         inputMode={inputMode}
         autoComplete={autoComplete}
+        disabled={disabled}
       />
 
       {hasMessage && (

@@ -5,14 +5,13 @@ import movaLogo from "../assets/mova_logo.png";
 import FormField from "../components/FormField";
 import { useFormState } from "../hooks/useFormState";
 import { useFormSubmit } from "../hooks/useFormSubmit";
+import { resolveAuthRoute } from "../services/authIdentity";
 import { getAuthSession } from "../services/authSession";
 import { loginUser } from "../services/authService";
 import { validateLoginForm } from "../utils/formValidators";
 
 function resolvePostLoginRoute(user) {
-  const profileType = user?.profileType;
-  const isLocador = profileType === "locador" || user?.empresa || user?.cnpj;
-  return isLocador ? "/conta" : "/tipos-carros";
+  return resolveAuthRoute(user);
 }
 
 function Login() {

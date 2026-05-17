@@ -2,13 +2,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ModalOverlay, ModalContent, MenuItem, HeaderIcons } from "../styles/authStyle";
 import { House, Menu, User, Clock, HeadphonesIcon, Settings, LogOut } from "lucide-react";
+import { resolveAuthRoute } from "../services/authIdentity";
 import { clearAuthSession, getAuthSession } from "../services/authSession";
 
 function resolveHomeRoute() {
     const session = getAuthSession();
-    const user = session?.user;
-    const isLocador = user?.profileType === "locador" || user?.empresa || user?.cnpj;
-    return isLocador ? "/conta" : "/tipos-carros";
+    return resolveAuthRoute(session?.user);
 }
 
 function TopBar() {
